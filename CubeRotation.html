@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cube rotation animation</title>
+</head>
+<body>
+    <h1>Cube rotation animation</h1>
+    <canvas id="platno" width="600" height="400" 
+    style="border: 5px solid"></canvas>
+    <script>
+        class Orto{
+        constructor(platno, xmin, xmax, ry){
+        this.platno = platno;
+        this.xmin = xmin;
+        this.xmax = xmax;
+        this.ry = ry;
+        this.g = this.platno.getContext("2d");
+        this.w = this.platno.width;
+        this.h = this.platno.height;
+        this.sx = (this.w - 0) / (this.xmax - this.xmin);
+        this.px = -this.sx * this.xmin;
+        this.sy = -this.sx;
+        this.py = (1 - this.ry) * this.h;
+        this.ymax = this.py / this.sx;
+        this.ymin = this.ymax - this.h / this.sx;
+        this.M = [[1, 0, 0, 0],
+                  [0, 1, 0, 0],
+                  [0, 0, 1, 0],
+                  [0, 0, 0, 1]];
+    }
+    postaviNa(x, y, z){
+        this.g.beginPath();
+        let [xc, yc] = this.TK(x, y, z);
+        this.g.moveTo(xc, yc);
+    }
+    linijaDo(x, y, z){
+        let [xc, yc] = this.TK(x, y, z);
+        this.g.lineTo(xc, yc);
+    }
+    koristiBoju(c){
+        this.g.strokeStyle = c;
+    }
+    debljinaLinije(debljina){
+        this.g.lineWidth = debljina;
+    }
+    povuciLiniju(){
+        this.g.stroke();
+    }
+    nacrtajKruznicu(R, nseg, boja){
+        const dphi = 2 * Math.PI / nseg;
+        this.postaviNa(R, 0);
+        this.koristiBoju(boja);
+        for(let i = 1; i <= nseg; i++) {
+            let x = R * Math.cos(i * dphi);
+            let y = R * Math.sin(i * dphi);
+            this.linijaDo(x, y);
+        }
+        this.povuciLiniju();
+    }
+    nacrtajElipsu(a, b, nseg, boja){
+        const dphi = 2 * Math.PI / nseg;
+        this.postaviNa(a, 0);
+        this.koristiBoju(boja);
+        for(let i = 1; i <= nseg; i++) {
+            let x = a * Math.cos(i * dphi);
+            let y = b * Math.sin(i * dphi);
+            this.linijaDo(x, y);
+        }
+        this.povuciLiniju();
+    }
+    skaliraj(sx, sy, sz){
+        this.puta([[sx, 0, 0, 0], [0, sy, 0, 0], [0, 0, sz, 0], [0, 0, 0, 1]]);
+    }
+    pomakni(dx, dy, dz){
+        this.puta([[1, 0, 0, dx], [0, 1, 0, dy], [0, 0, 1, dz], [0, 0, 0, 1]]);
+    }
+    rotirajX(kut) {
+        let phi = kut * Math.PI / 180;
+        this.puta(
+         [[1,             0,              0, 0],
+          [0, Math.cos(phi), -Math.sin(phi), 0],
+          [0, Math.sin(phi),  Math.cos(phi), 0],
+          [0,             0,              0, 1]]);
+    } // rotirajX
+
+    rotirajY(kut) {
+        let phi = kut * Math.PI / 180;
+        this.puta(
+         [[ Math.cos(phi), 0, Math.sin(phi), 0],
+          [ 0,             1,             0, 0],
+          [-Math.sin(phi), 0, Math.cos(phi), 0],
+          [ 0,             0,             0, 1]]);
+    } // rotirajY
+
+    rotirajZ(kut) {
+        let phi = kut * Math.PI / 180;
+        this.puta(
+         [[Math.cos(phi), -Math.sin(phi), 0, 0],
+          [Math.sin(phi),  Math.cos(phi), 0, 0],
+          [0,              0,             1, 0],
+          [0,              0,             0, 1]]);
+    } // rotirajZ
+
+    TK(x, y, z){
+        let xg = this.M[0][0] * x + this.M[0][1] * y + this.M[0][2] * z + this.M[0][3];
+        let yg = this.M[1][0] * x + this.M[1][1] * y + this.M[1][2] * z + this.M[1][3];
+        let zg = this.M[2][0] * x + this.M[2][1] * y + this.M[2][2] * z + this.M[2][3];
+
+        let xc = this.sx * xg + this.px;
+        let yc = this.sy * yg + this.py;
+        return [xc, yc];
+    }
+    puta(mat) {
+        let rezultat = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]];
+        for(let i = 0; i < 4; i++)
+            for(let j = 0; j < 4; j++)
+                for(let k = 0; k < 4; k++)
+                    rezultat[i][j] += this.M[i][k] * mat[k][j];
+        this.M = rezultat;
+    }
+    identiteta(){
+        this.M = [[1, 0, 0, 0],
+                  [0, 1, 0, 0],
+                  [0, 0, 1, 0],
+                  [0, 0, 0, 1]];
+    }
+    iscrtajOsi(){
+        this.koristiBoju("black");
+        this.debljinaLinije(1.5);
+        this.postaviNa(0, this.ymax);
+        this.linijaDo(0, - this.ymax);
+        this.povuciLiniju();
+        this.postaviNa(this.xmax, 0);
+        this.linijaDo(-this.xmax, 0);
+        this.povuciLiniju();
+        for(let i=this.xmin; i<=this.xmax; i++){
+            this.postaviNa(i, 0);
+            this.linijaDo(i, 0.16);
+            this.linijaDo(i, -0.16);
+            this.povuciLiniju();
+        }
+        for(let i=this.ymin; i<=this.ymax; i++){
+            this.postaviNa(0, i);
+            this.linijaDo(0.16, i);
+            this.linijaDo(-0.16, i);
+            this.povuciLiniju();
+        }
+    }
+    nacrtajSinusoide(radius, amplituda, n, krivulje, boja) {
+        this.koristiBoju(boja);
+        this.debljinaLinije(1);
+
+        const dtheta = (2 * Math.PI) / krivulje;
+         for (let j = 0; j < krivulje; j++) {
+            this.g.beginPath();
+            let kut = j * dtheta;
+                for (let i = 0; i <= n; i++){
+                    let theta = (i / n) * 2 * Math.PI;
+                    let r = radius + amplituda * Math.sin(3 * theta);
+                    let x = r * Math.cos(theta + kut);
+                    let y = r * Math.sin(theta + kut);
+
+                    if(i === 0){
+                        this.postaviNa(x, y);
+                    } 
+                    else{
+                        this.linijaDo(x, y);
+                    }
+                    }
+                    this.povuciLiniju();
+                }
+    }
+    rotirajOko(u, v, kut){
+        this.pomakni(u, v);
+        this.rotiraj(kut);
+        this.pomakni(-u, -v);
+    }
+    osi3D(){
+    this.rotirajX(20);
+    this.rotirajY(-120);
+    this.rotirajX(-90);
+    this.postaviNa(0, 0, 0);
+    this.koristiBoju("red");
+    this.linijaDo(5, 0, 0);
+    this.povuciLiniju();
+    this.postaviNa(0, 0, 0);
+    this.koristiBoju("green");
+    this.linijaDo(0, 5, 0);
+    this.povuciLiniju();
+    this.postaviNa(0, 0, 0);
+    this.koristiBoju("blue");
+    this.linijaDo(0, 0, 5);
+    this.povuciLiniju();
+    }
+    kocka(a, boja){
+    this.postaviNa(0, 0, 0);
+    this.koristiBoju(boja);
+    this.linijaDo(a, 0, 0);
+    this.linijaDo(a, a, 0);
+    this.linijaDo(0, a, 0);
+    this.linijaDo(0, 0, 0);
+    this.povuciLiniju();
+    this.postaviNa(0, 0, a);
+    this.linijaDo(a, 0, a);
+    this.linijaDo(a, a, a);
+    this.linijaDo(0, a, a);
+    this.linijaDo(0, 0, a);
+    this.povuciLiniju();
+    this.postaviNa(0, 0, a);
+    this.linijaDo(0, 0, 0);
+    this.povuciLiniju();
+    this.postaviNa(0, a, a);
+    this.linijaDo(0, a, 0);
+    this.povuciLiniju();
+    this.postaviNa(a, a, a);
+    this.linijaDo(a, a, 0);
+    this.povuciLiniju();
+    this.postaviNa(a, 0, a);
+    this.linijaDo(a, 0, 0);
+    this.povuciLiniju();
+    }
+
+    animirajRotaciju(){
+    this.g.clearRect(0, 0, platno.width, platno.height); 
+    this.identiteta();
+    this.osi3D();
+    this.rotirajY(kutY); 
+    this.kocka(2.5, "black");
+    kutY += 2;
+    requestAnimationFrame(() => this.animirajRotaciju());
+}
+
+}
+    let platno = document.getElementById("platno");
+    let sustav = new Orto(platno, -10, 10, 1/2);
+    let kutY = 0;
+    sustav.animirajRotaciju();
+    </script>
+</body>
+</html>
